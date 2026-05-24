@@ -4,7 +4,7 @@ const apiUrl = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: apiUrl,
-  timeout: 10000,
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
@@ -18,6 +18,14 @@ api.interceptors.request.use((config) => {
 });
 
 export const getErrorMessage = (error) => {
+  if (error?.code === 'ECONNABORTED') {
+    return 'The server is taking too long to respond. Please try again in a moment.';
+  }
+
+  if (error?.message === 'Network Error') {
+    return 'Unable to reach the server. Please wait a moment and try again.';
+  }
+
   return error?.response?.data?.message || error?.message || 'Something went wrong. Please try again.';
 };
 
