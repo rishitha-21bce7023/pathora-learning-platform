@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { getAssetUrl } from '../services/api.js';
 import { createCourse, createTopic, deleteCourse, fetchAdminCourseBySlug, fetchAdminCourses, updateCourse, updateTopic, uploadTopicNotes } from '../services/adminService.js';
 
 const adminNav = [
@@ -579,6 +580,7 @@ const AdminCoursesPage = () => {
                     <div className="mt-4 space-y-4">
                       {topics.map((topic) => {
                         const draft = topicDrafts[topic._id] || {};
+                        const notePdfUrl = getAssetUrl(topic.notePdfUrl);
 
                         return (
                           <div key={topic._id} className="rounded-xl border border-slate-800 p-4">
@@ -731,10 +733,10 @@ const AdminCoursesPage = () => {
                               <div>
                                 <p className="text-sm text-slate-300">Current notes</p>
                                 <p className="mt-2 text-sm text-slate-200">{topic.noteFileName || 'No PDF uploaded'}</p>
-                                {topic.notePdfUrl ? (
+                                {notePdfUrl ? (
                                   <div className="mt-3 flex flex-wrap gap-2">
                                     <a
-                                      href={topic.notePdfUrl}
+                                      href={notePdfUrl}
                                       target="_blank"
                                       rel="noreferrer"
                                       className="rounded-lg border border-cyan-400/50 px-3 py-2 text-sm font-semibold text-cyan-100"
@@ -742,7 +744,7 @@ const AdminCoursesPage = () => {
                                       Open PDF
                                     </a>
                                     <a
-                                      href={topic.notePdfUrl}
+                                      href={notePdfUrl}
                                       download={topic.noteFileName || true}
                                       className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
                                     >
@@ -752,7 +754,7 @@ const AdminCoursesPage = () => {
                                 ) : null}
                               </div>
                               <label className="text-sm text-slate-200">
-                                {topic.notePdfUrl ? 'Replace PDF' : 'Upload PDF'}
+                                {notePdfUrl ? 'Replace PDF' : 'Upload PDF'}
                                 <input
                                   type="file"
                                   accept="application/pdf"

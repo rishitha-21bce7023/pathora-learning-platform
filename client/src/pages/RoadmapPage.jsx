@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getAssetUrl } from '../services/api.js';
 import { DEFAULT_COURSE_SLUG, fetchCourseProgress, fetchCourseRoadmapBySlug, saveTopicProgress, unmarkTopicProgress } from '../services/courseService.js';
 
 const studentNav = [
@@ -147,6 +148,7 @@ const RoadmapPage = () => {
     : 0;
 
   const selectedTopic = topicsWithStatus.find((topic) => topic._id === selectedTopicId) || topicsWithStatus[0] || null;
+  const selectedTopicNoteUrl = getAssetUrl(selectedTopic?.notePdfUrl);
   const practiceLinkGroups = selectedTopic ? groupPracticeLinksByPlatform(selectedTopic.practiceLinks) : {};
   const practicePlatforms = Object.keys(practiceLinkGroups).sort((left, right) => left.localeCompare(right));
 
@@ -338,10 +340,10 @@ const RoadmapPage = () => {
                           {selectedTopic.noteFileName || 'No PDF notes uploaded yet'}
                         </p>
                       </div>
-                      {selectedTopic.notePdfUrl ? (
+                      {selectedTopicNoteUrl ? (
                         <div className="flex flex-wrap gap-2">
                           <a
-                            href={selectedTopic.notePdfUrl}
+                            href={selectedTopicNoteUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="rounded-lg border border-cyan-400/50 px-3 py-2 text-sm font-semibold text-cyan-100"
@@ -349,7 +351,7 @@ const RoadmapPage = () => {
                             Open
                           </a>
                           <a
-                            href={selectedTopic.notePdfUrl}
+                            href={selectedTopicNoteUrl}
                             download={selectedTopic.noteFileName || true}
                             className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
                           >
@@ -358,7 +360,7 @@ const RoadmapPage = () => {
                         </div>
                       ) : null}
                     </div>
-                    {!selectedTopic.notePdfUrl ? (
+                    {!selectedTopicNoteUrl ? (
                       <p className="mt-3 text-sm text-amber-200">Notes are not available for this topic yet.</p>
                     ) : null}
                   </div>

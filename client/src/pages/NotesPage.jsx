@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getAssetUrl } from '../services/api.js';
 import { fetchPublishedCourses, fetchCourseRoadmapBySlug } from '../services/courseService.js';
 
 const studentNav = [
@@ -52,7 +53,7 @@ const NotesPage = () => {
               title: topic.title,
               description: topic.description,
               noteFileName: topic.noteFileName || 'Notes PDF',
-              notePdfUrl: topic.notePdfUrl,
+              notePdfUrl: getAssetUrl(topic.notePdfUrl),
             })),
         );
 

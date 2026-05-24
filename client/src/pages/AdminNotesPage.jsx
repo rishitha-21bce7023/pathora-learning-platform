@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getAssetUrl } from '../services/api.js';
 import { fetchAdminCourseBySlug, fetchAdminCourses } from '../services/adminService.js';
 
 const adminNav = [
@@ -109,41 +110,45 @@ const AdminNotesPage = () => {
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  {topics.map((topic) => (
-                    <div
-                      key={topic._id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4"
-                    >
-                      <div>
-                        <p className="text-sm text-cyan-200">Day {topic.dayNumber}</p>
-                        <p className="mt-1 font-semibold text-white">{topic.title}</p>
-                        <p className="mt-2 text-sm text-slate-300">{topic.noteFileName || 'No PDF uploaded'}</p>
-                      </div>
-                      {topic.notePdfUrl ? (
-                        <div className="flex flex-wrap gap-2">
-                          <a
-                            href={topic.notePdfUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-lg border border-cyan-400/50 px-3 py-2 text-sm font-semibold text-cyan-100"
-                          >
-                            Open
-                          </a>
-                          <a
-                            href={topic.notePdfUrl}
-                            download={topic.noteFileName || true}
-                            className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
-                          >
-                            Download
-                          </a>
+                  {topics.map((topic) => {
+                    const notePdfUrl = getAssetUrl(topic.notePdfUrl);
+
+                    return (
+                      <div
+                        key={topic._id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4"
+                      >
+                        <div>
+                          <p className="text-sm text-cyan-200">Day {topic.dayNumber}</p>
+                          <p className="mt-1 font-semibold text-white">{topic.title}</p>
+                          <p className="mt-2 text-sm text-slate-300">{topic.noteFileName || 'No PDF uploaded'}</p>
                         </div>
-                      ) : (
-                        <span className="rounded-full bg-amber-500/10 px-3 py-1 text-sm text-amber-200">
-                          Notes unavailable
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                        {notePdfUrl ? (
+                          <div className="flex flex-wrap gap-2">
+                            <a
+                              href={notePdfUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-lg border border-cyan-400/50 px-3 py-2 text-sm font-semibold text-cyan-100"
+                            >
+                              Open
+                            </a>
+                            <a
+                              href={notePdfUrl}
+                              download={topic.noteFileName || true}
+                              className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="rounded-full bg-amber-500/10 px-3 py-1 text-sm text-amber-200">
+                            Notes unavailable
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {!topics.length ? (
                     <div className="rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-300">

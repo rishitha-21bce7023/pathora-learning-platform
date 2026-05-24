@@ -54,7 +54,7 @@ const fallbackSummary = {
 
 const chartText = { fill: '#cbd5e1', fontSize: 12 };
 const chartGrid = '#1e293b';
-const pieColors = ['#22d3ee', '#334155'];
+const pieColors = ['#34d399', '#fbbf24'];
 
 const toDateKey = (date) => {
   const year = date.getFullYear();
@@ -184,25 +184,25 @@ const DashboardPage = () => {
         {!isLoading ? (
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-5">
                 <p className="text-sm text-slate-300">XP points</p>
                 <p className="mt-3 text-3xl font-bold text-white">{gamification.xp}</p>
-                <p className="mt-2 text-sm text-cyan-200">{gamification.rank} rank</p>
+                <p className="mt-2 text-sm text-emerald-100">✨ {gamification.rank} rank</p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5">
                 <p className="text-sm text-slate-300">Completed topics</p>
                 <p className="mt-3 text-3xl font-bold text-white">{summary.overall.completedTopics}</p>
-                <p className="mt-2 text-sm text-cyan-200">{summary.overall.progressPercent}% complete</p>
+                <p className="mt-2 text-sm text-amber-100">🌿 {summary.overall.progressPercent}% complete</p>
               </div>
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
                 <p className="text-sm text-slate-300">Current streak</p>
                 <p className="mt-3 text-3xl font-bold text-white">{summary.overall.currentStreak} days</p>
-                <p className="mt-2 text-sm text-cyan-200">{summary.overall.longestStreak} longest streak</p>
+                <p className="mt-2 text-sm text-emerald-200">🔥 {summary.overall.longestStreak} longest streak</p>
               </div>
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
                 <p className="text-sm text-slate-300">Weekly goal</p>
                 <p className="mt-3 text-3xl font-bold text-white">{gamification.weeklyGoal.completed}/{gamification.weeklyGoal.target}</p>
-                <p className="mt-2 text-sm text-cyan-200">+{gamification.weeklyGoal.reward} XP reward</p>
+                <p className="mt-2 text-sm text-amber-100">⭐ +{gamification.weeklyGoal.reward} XP reward</p>
               </div>
             </div>
 
@@ -230,7 +230,7 @@ const DashboardPage = () => {
                     <XAxis dataKey="title" tick={chartText} interval={0} tickFormatter={(value) => value.split(' ')[0]} />
                     <YAxis tick={chartText} domain={[0, 100]} />
                     <Tooltip contentStyle={{ background: '#020617', border: '1px solid #1e293b', color: '#e2e8f0' }} />
-                    <Bar dataKey="progressPercent" fill="#22d3ee" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="progressPercent" fill="#34d399" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -301,9 +301,9 @@ const DashboardPage = () => {
                 <div className="mt-4 h-2 rounded-full bg-slate-800">
                   <div className="h-2 rounded-full bg-cyan-400" style={{ width: `${gamification.dailyChallenge.progress}%` }} />
                 </div>
-                <p className="mt-3 text-sm text-cyan-200">Reward: +{gamification.dailyChallenge.reward} XP</p>
+                <p className="mt-3 text-sm text-amber-100">Reward: +{gamification.dailyChallenge.reward} XP</p>
                 <div className="mt-5 space-y-3">
-                  <button type="button" onClick={handleResumeLatestCourse} disabled={!activeCourse} className="w-full rounded-xl border border-cyan-400/50 bg-cyan-400/10 px-4 py-3 text-left text-sm font-semibold text-cyan-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-400">
+                  <button type="button" onClick={handleResumeLatestCourse} disabled={!activeCourse} className="w-full rounded-xl border border-emerald-400/50 bg-emerald-400/10 px-4 py-3 text-left text-sm font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-400">
                     {activeCourse ? 'Resume latest course' : 'No course to resume yet'}
                   </button>
                   <button type="button" onClick={() => navigate('/challenges')} className="w-full rounded-xl border border-slate-700 px-4 py-3 text-left text-sm font-semibold text-slate-100">
@@ -318,7 +318,7 @@ const DashboardPage = () => {
                 <p className="text-sm text-slate-300">Badges</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {gamification.badges.map((badge) => (
-                    <div key={badge.key} className={`rounded-xl border p-4 ${badge.unlocked ? 'border-cyan-400/50 bg-cyan-500/10' : 'border-slate-800 bg-slate-900'}`}>
+                    <div key={badge.key} className={`rounded-xl border p-4 ${badge.unlocked ? 'border-amber-300/50 bg-amber-300/10' : 'border-slate-800 bg-slate-900'}`}>
                       <p className="font-semibold text-white">{badge.label}</p>
                       <p className="mt-2 text-sm text-slate-300">{badge.requirement}</p>
                     </div>
@@ -336,7 +336,7 @@ const DashboardPage = () => {
                           <p className="font-semibold text-white">#{index + 1} {learner.name}</p>
                           <p className="text-sm text-slate-300">{learner.rank} · {learner.completedTopics || 0} topics</p>
                         </div>
-                        <p className="text-sm font-semibold text-cyan-100">{learner.xp} XP</p>
+                        <p className="text-sm font-semibold text-emerald-100">{learner.xp} XP</p>
                       </div>
                     ))
                   ) : (
