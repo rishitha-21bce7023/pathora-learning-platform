@@ -53,6 +53,21 @@ Pathora/
 - `npm run dev:client` starts only the frontend.
 - `npm run dev:server` starts only the backend.
 - `npm run install:all` installs root, client, and server dependencies.
+- `npm run seed:admin --prefix server` creates or updates the private admin account from `SEED_ADMIN_*` env vars.
+
+## Admin Account
+
+Public registration always creates student accounts. Create the admin account privately from the backend environment:
+
+```bash
+cd server
+SEED_ADMIN_NAME="Pathora Admin" \
+SEED_ADMIN_EMAIL="admin@example.com" \
+SEED_ADMIN_PASSWORD="use_a_long_secure_password" \
+npm run seed:admin
+```
+
+On Render, set `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, and `SEED_ADMIN_PASSWORD` temporarily, open the backend shell/job, run `npm run seed:admin`, then remove the password env value after the admin is created.
 
 ## Deployment
 

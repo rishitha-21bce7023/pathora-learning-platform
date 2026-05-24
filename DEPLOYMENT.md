@@ -43,6 +43,26 @@ CLIENT_URL=https://your-app.vercel.app,https://your-custom-domain.com
 
 PDF notes are stored in the local `uploads` folder. On Render, add a persistent disk if you want uploaded notes to survive redeploys/restarts.
 
+## 2.1 Create The Admin Account
+
+Public signup creates only student accounts. Create the admin account privately after the backend is connected to MongoDB.
+
+Temporarily add these Render environment variables:
+
+```env
+SEED_ADMIN_NAME=Pathora Admin
+SEED_ADMIN_EMAIL=your_admin_email@example.com
+SEED_ADMIN_PASSWORD=use_a_long_secure_password
+```
+
+Run this in the Render backend shell/job:
+
+```bash
+npm run seed:admin
+```
+
+After it succeeds, remove `SEED_ADMIN_PASSWORD` from Render environment variables and redeploy/restart if needed.
+
 ## 3. Deploy Frontend On Vercel
 
 Create a Vercel project from this repo.

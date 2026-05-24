@@ -26,5 +26,3 @@ export const getJwtSecret = () => {
 
   return secret;
 };
-
-export const isAdminRegistrationAllowed = () => process.env.ALLOW_ADMIN_REGISTRATION === 'true';

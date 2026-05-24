@@ -2,7 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { authorize, protect } from '../middleware/auth.middleware.js';
-import { getJwtSecret, isAdminRegistrationAllowed, isValidEmail, normalizeEmail, sanitizeString } from '../utils/security.js';
+import { getJwtSecret, isValidEmail, normalizeEmail, sanitizeString } from '../utils/security.js';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.post('/register', async (req, res, next) => {
   try {
     const name = sanitizeString(req.body.name, 80);
     const email = normalizeEmail(req.body.email);
-    const { password, role } = req.body;
+    const { password } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -41,7 +41,7 @@ router.post('/register', async (req, res, next) => {
       name,
       email,
       password,
-      role: role === 'admin' && isAdminRegistrationAllowed() ? 'admin' : 'student',
+      role: 'student',
     });
 
     res.status(201).json({

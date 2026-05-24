@@ -9,7 +9,6 @@ const initialForm = {
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'student',
 };
 
 const RegisterPage = () => {
@@ -45,7 +44,6 @@ const RegisterPage = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
       });
       navigate(getDashboardPath(authData.user.role));
     } catch (registerError) {
@@ -97,25 +95,6 @@ const RegisterPage = () => {
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
               placeholder="you@example.com"
             />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">
-              Account type
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-            >
-              <option value="student">Student</option>
-              <option value="admin">Admin</option>
-            </select>
-            <p className="mt-2 text-xs text-slate-400">
-              Choose <span className="font-semibold text-cyan-200">Admin</span> if you want access to the admin dashboard.
-            </p>
           </div>
 
           <div>
