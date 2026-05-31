@@ -41,7 +41,7 @@ For multiple frontend origins, separate them with commas:
 CLIENT_URL=https://your-app.vercel.app,https://your-custom-domain.com
 ```
 
-PDF notes are stored in the local `uploads` folder. On Render, add a persistent disk if you want uploaded notes to survive redeploys/restarts.
+PDF notes are uploaded to Cloudinary as raw files. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` on Render; MongoDB stores the returned secure Cloudinary URL and public ID.
 
 ## 2.1 Create The Admin Account
 

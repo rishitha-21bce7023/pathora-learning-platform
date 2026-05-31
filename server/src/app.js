@@ -31,12 +31,6 @@ app.use(
   }),
 );
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', express.static('uploads', {
-  fallthrough: false,
-  setHeaders(res) {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-  },
-}));
 
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);

@@ -20,6 +20,22 @@ export const getAssetUrl = (path = '') => {
   return `${apiBase.origin}${normalizedPath}`;
 };
 
+export const isValidPdfUrl = (url = '') => {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'https:';
+  } catch (_error) {
+    return false;
+  }
+};
+
+export const getNotePdfUrl = (topic = {}) => {
+  const pdfUrl = topic.note?.pdfUrl || topic.notePdfUrl || '';
+  return isValidPdfUrl(pdfUrl) ? pdfUrl : '';
+};
+
+export const getNoteFileName = (topic = {}) => topic.note?.originalFileName || topic.noteFileName || 'Notes PDF';
+
 const api = axios.create({
   baseURL: apiUrl,
   timeout: 30000,

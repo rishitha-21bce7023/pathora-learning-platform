@@ -1,8 +1,8 @@
-import fs from 'fs';
 import path from 'path';
 import { Router } from 'express';
 import multer from 'multer';
 import mongoose from 'mongoose';
+import { v2 as cloudinary } from 'cloudinary';
 import Challenge from '../models/Challenge.js';
 import Course from '../models/Course.js';
 import QuizQuestion from '../models/QuizQuestion.js';
@@ -12,27 +12,17 @@ import { sanitizeString } from '../utils/security.js';
 
 const router = Router();
 
-const uploadsDir = path.resolve('uploads', 'notes');
 const maxNoteFileSize = 10 * 1024 * 1024;
+const cloudinaryNotesFolder = process.env.CLOUDINARY_NOTES_FOLDER || 'pathora/notes';
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination(_req, _file, callback) {
-    callback(null, uploadsDir);
-  },
-  filename(_req, file, callback) {
-    const timestamp = Date.now();
-    const extension = path.extname(file.originalname).toLowerCase();
-    const baseName = path.basename(file.originalname, extension).replace(/[^a-zA-Z0-9.-]/g, '-');
-    callback(null, `${timestamp}-${baseName}${extension}`);
-  },
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: maxNoteFileSize,
   },
@@ -48,24 +38,122 @@ const upload = multer({
   },
 });
 
-const getUploadedUrl = (filename) => `/uploads/notes/${filename}`;
+const ensureCloudinaryConfigured = () => {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    const error = new Error('Cloudinary notes upload is not configured');
+    error.status = 400;
+    throw error;
+  }
+};
 
-const deleteUploadedFile = (fileUrl) => {
-  if (!fileUrl) {
+const uploadPdfToCloudinary = (file, topicId) => {
+  ensureCloudinaryConfigured();
+
+  const extension = path.extname(file.originalname).toLowerCase();
+  const baseName = path.basename(file.originalname, extension).replace(/[^a-zA-Z0-9.-]/g, '-');
+  const publicId = `${topicId}-${Date.now()}-${baseName || 'notes'}${extension}`;
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: cloudinaryNotesFolder,
+        public_id: publicId,
+        resource_type: 'raw',
+        type: 'upload',
+        overwrite: true,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(result);
+      },
+    );
+
+    stream.end(file.buffer);
+  });
+};
+
+const deleteCloudinaryRawFile = async (publicId) => {
+  if (!publicId) {
     return;
   }
 
-  const filename = fileUrl.split('/uploads/notes/').pop();
+  try {
+    ensureCloudinaryConfigured();
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+  } catch (_error) {
+    // Deleting metadata should not fail just because Cloudinary cleanup failed.
+  }
+};
 
-  if (!filename) {
-    return;
+const getTopicNoteUrl = (topic) => topic?.note?.pdfUrl || topic?.notePdfUrl || '';
+
+const getTopicNoteFileName = (topic) => topic?.note?.originalFileName || topic?.noteFileName || '';
+
+const isValidPdfUrl = (value) => {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.protocol === 'https:';
+  } catch (_error) {
+    return false;
+  }
+};
+
+const noteResponse = (topic) => {
+  const pdfUrl = getTopicNoteUrl(topic);
+
+  if (!pdfUrl || !isValidPdfUrl(pdfUrl)) {
+    return {
+      pdfUrl: '',
+      publicId: topic?.note?.publicId || '',
+      originalFileName: getTopicNoteFileName(topic),
+      topicId: topic?._id || topic?.note?.topicId || null,
+      uploadedAt: topic?.note?.uploadedAt || null,
+    };
   }
 
-  const filePath = path.resolve(uploadsDir, path.basename(filename));
+  return {
+    pdfUrl,
+    publicId: topic?.note?.publicId || '',
+    originalFileName: getTopicNoteFileName(topic),
+    topicId: topic?._id || topic?.note?.topicId || null,
+    uploadedAt: topic?.note?.uploadedAt || null,
+  };
+};
 
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+const applyNoteMetadata = (topic, result, originalFileName) => {
+  const secureUrl = result.secure_url;
+
+  if (!secureUrl || !isValidPdfUrl(secureUrl)) {
+    const error = new Error('Cloudinary did not return a valid secure PDF URL');
+    error.status = 502;
+    throw error;
   }
+
+  topic.note = {
+    pdfUrl: secureUrl,
+    publicId: result.public_id,
+    originalFileName,
+    topicId: topic._id,
+    uploadedAt: new Date(),
+  };
+  topic.notePdfUrl = secureUrl;
+  topic.noteFileName = originalFileName;
+};
+
+const clearNoteMetadata = (topic) => {
+  topic.note = {
+    pdfUrl: '',
+    publicId: '',
+    originalFileName: '',
+    topicId: topic._id,
+    uploadedAt: null,
+  };
+  topic.notePdfUrl = '';
+  topic.noteFileName = '';
 };
 
 const buildSlug = (title) => {
@@ -193,12 +281,12 @@ const validateTopicPayload = (payload) => {
     }
   }
 
-  if (payload.notePdfUrl !== undefined && typeof payload.notePdfUrl !== 'string') {
-    errors.push('notePdfUrl must be a string when provided');
+  if (payload.notePdfUrl) {
+    errors.push('notes must be uploaded through the PDF upload endpoint');
   }
 
-  if (payload.noteFileName !== undefined && typeof payload.noteFileName !== 'string') {
-    errors.push('noteFileName must be a string when provided');
+  if (payload.noteFileName) {
+    errors.push('notes must be uploaded through the PDF upload endpoint');
   }
 
   if (payload.isActive !== undefined && typeof payload.isActive !== 'boolean') {
@@ -220,7 +308,17 @@ const courseResponse = (course) => ({
     : undefined,
 });
 
-const topicResponse = (topic) => topic.toObject();
+const topicResponse = (topic) => {
+  const plainTopic = topic.toObject();
+  const note = noteResponse(topic);
+
+  return {
+    ...plainTopic,
+    note,
+    notePdfUrl: note.pdfUrl,
+    noteFileName: note.originalFileName,
+  };
+};
 
 const ensureCourseExists = async (courseId) => {
   if (!mongoose.Types.ObjectId.isValid(courseId)) {
@@ -275,8 +373,8 @@ router.get('/slug/:slug', async (req, res, next) => {
 
 router.use(authorize('admin'));
 
-const deleteTopicNoteFile = (topic) => {
-  deleteUploadedFile(topic?.notePdfUrl);
+const deleteTopicNoteFile = async (topic) => {
+  await deleteCloudinaryRawFile(topic?.note?.publicId);
 };
 
 router.post('/topics/:topicId/notes', (req, res, next) => {
@@ -296,7 +394,6 @@ router.post('/topics/:topicId/notes', (req, res, next) => {
     const topic = await Topic.findById(req.params.topicId);
 
     if (!topic) {
-      deleteUploadedFile(getUploadedUrl(req.file?.filename));
       return res.status(404).json({ message: 'Topic not found' });
     }
 
@@ -304,16 +401,36 @@ router.post('/topics/:topicId/notes', (req, res, next) => {
       return res.status(400).json({ message: 'A PDF file is required' });
     }
 
-    const previousNoteUrl = topic.notePdfUrl;
-    topic.notePdfUrl = getUploadedUrl(req.file.filename);
-    topic.noteFileName = req.file.originalname;
+    const previousPublicId = topic.note?.publicId;
+    const uploadResult = await uploadPdfToCloudinary(req.file, topic._id);
+
+    applyNoteMetadata(topic, uploadResult, req.file.originalname);
     await topic.save();
 
-    deleteUploadedFile(previousNoteUrl);
+    await deleteCloudinaryRawFile(previousPublicId);
 
     res.json({ topic: topicResponse(topic) });
   } catch (error) {
-    deleteUploadedFile(getUploadedUrl(req.file?.filename));
+    next(error);
+  }
+});
+
+router.delete('/topics/:topicId/notes', async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.topicId);
+
+    if (!topic) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    const previousPublicId = topic.note?.publicId;
+    clearNoteMetadata(topic);
+    await topic.save();
+
+    await deleteCloudinaryRawFile(previousPublicId);
+
+    res.json({ topic: topicResponse(topic) });
+  } catch (error) {
     next(error);
   }
 });
@@ -449,7 +566,7 @@ router.delete('/:id', async (req, res, next) => {
 
     const topics = await Topic.find({ courseId: course._id });
     const topicIds = topics.map((topic) => topic._id);
-    topics.forEach(deleteTopicNoteFile);
+    await Promise.all(topics.map(deleteTopicNoteFile));
     await Challenge.deleteMany({ courseId: course._id });
     await QuizQuestion.deleteMany({ topicId: { $in: topicIds } });
     await Topic.deleteMany({ courseId: course._id });
@@ -483,7 +600,6 @@ router.post('/:courseId/topics', async (req, res, next) => {
       estimatedMinutes: Number(req.body.estimatedMinutes),
       order: nextOrder,
       practiceLinks: normalizePracticeLinks(req.body.practiceLinks),
-      notePdfUrl: sanitizeString(req.body.notePdfUrl),
       isActive: req.body.isActive ?? true,
     });
 
@@ -524,14 +640,6 @@ router.put('/topics/:topicId', async (req, res, next) => {
     topic.estimatedMinutes = Number(req.body.estimatedMinutes);
     topic.order = req.body.order !== undefined ? Number(req.body.order) : topic.order;
     topic.practiceLinks = req.body.practiceLinks !== undefined ? normalizePracticeLinks(req.body.practiceLinks) : topic.practiceLinks;
-    if (req.body.notePdfUrl !== undefined) {
-      topic.notePdfUrl = sanitizeString(req.body.notePdfUrl);
-    }
-
-    if (req.body.noteFileName !== undefined) {
-      topic.noteFileName = sanitizeString(req.body.noteFileName);
-    }
-
     topic.isActive = req.body.isActive ?? topic.isActive;
 
     await topic.save();
@@ -559,7 +667,7 @@ router.delete('/topics/:topicId', async (req, res, next) => {
     }
 
     await ensureCourseExists(topic.courseId);
-    deleteTopicNoteFile(topic);
+    await deleteTopicNoteFile(topic);
     await topic.deleteOne();
 
     res.json({ message: 'Topic deleted successfully' });

@@ -4,8 +4,8 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { getAssetUrl } from '../services/api.js';
-import { createCourse, createTopic, deleteCourse, fetchAdminCourseBySlug, fetchAdminCourses, updateCourse, updateTopic, uploadTopicNotes } from '../services/adminService.js';
+import { getNoteFileName, getNotePdfUrl } from '../services/api.js';
+import { createCourse, createTopic, deleteCourse, deleteTopicNotes, fetchAdminCourseBySlug, fetchAdminCourses, updateCourse, updateTopic, uploadTopicNotes } from '../services/adminService.js';
 
 const adminNav = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
@@ -279,6 +279,28 @@ const AdminCoursesPage = () => {
     } catch (loadError) {
       setError(loadError.message || 'Unable to upload notes.');
       showToast(loadError.message || 'Unable to upload notes.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteNotes = async (topic) => {
+    const noteName = getNoteFileName(topic);
+    const confirmed = window.confirm(`Delete "${noteName}" from this topic?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError('');
+      await deleteTopicNotes(topic._id);
+      await refreshSelectedCourse();
+      showToast('Notes deleted successfully.');
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to delete notes.');
+      showToast(loadError.message || 'Unable to delete notes.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -580,7 +602,8 @@ const AdminCoursesPage = () => {
                     <div className="mt-4 space-y-4">
                       {topics.map((topic) => {
                         const draft = topicDrafts[topic._id] || {};
-                        const notePdfUrl = getAssetUrl(topic.notePdfUrl);
+                        const notePdfUrl = getNotePdfUrl(topic);
+                        const noteFileName = getNoteFileName(topic);
 
                         return (
                           <div key={topic._id} className="rounded-xl border border-slate-800 p-4">
@@ -732,7 +755,7 @@ const AdminCoursesPage = () => {
                             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                               <div>
                                 <p className="text-sm text-slate-300">Current notes</p>
-                                <p className="mt-2 text-sm text-slate-200">{topic.noteFileName || 'No PDF uploaded'}</p>
+                                <p className="mt-2 text-sm text-slate-200">{notePdfUrl ? noteFileName : 'No PDF uploaded'}</p>
                                 {notePdfUrl ? (
                                   <div className="mt-3 flex flex-wrap gap-2">
                                     <a
@@ -745,13 +768,23 @@ const AdminCoursesPage = () => {
                                     </a>
                                     <a
                                       href={notePdfUrl}
-                                      download={topic.noteFileName || true}
+                                      download={noteFileName || true}
                                       className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
                                     >
                                       Download
                                     </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteNotes(topic)}
+                                      disabled={isSaving}
+                                      className="rounded-lg border border-rose-400/50 px-3 py-2 text-sm font-semibold text-rose-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+                                    >
+                                      Delete PDF
+                                    </button>
                                   </div>
-                                ) : null}
+                                ) : (
+                                  <p className="mt-2 text-xs text-amber-200">Upload a PDF to create a valid Cloudinary notes link.</p>
+                                )}
                               </div>
                               <label className="text-sm text-slate-200">
                                 {notePdfUrl ? 'Replace PDF' : 'Upload PDF'}

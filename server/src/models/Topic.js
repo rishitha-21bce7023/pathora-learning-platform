@@ -91,6 +91,32 @@ const topicSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    note: {
+      pdfUrl: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      publicId: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      originalFileName: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      topicId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Topic',
+        default: null,
+      },
+      uploadedAt: {
+        type: Date,
+        default: null,
+      },
+    },
     isActive: {
       type: Boolean,
       default: true,

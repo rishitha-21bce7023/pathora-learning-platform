@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getAssetUrl } from '../services/api.js';
-import { fetchAdminCourseBySlug, fetchAdminCourses } from '../services/adminService.js';
+import { useToast } from '../context/ToastContext.jsx';
+import { getNoteFileName, getNotePdfUrl } from '../services/api.js';
+import { deleteTopicNotes, fetchAdminCourseBySlug, fetchAdminCourses } from '../services/adminService.js';
 
 const adminNav = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
@@ -15,48 +16,59 @@ const adminNav = [
 const AdminNotesPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
   const [courseNotes, setCourseNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
 
+  const loadNotes = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const courses = await fetchAdminCourses();
+      const details = await Promise.all(
+        courses.map(async (course) => {
+          const response = await fetchAdminCourseBySlug(course.slug);
+          return {
+            course: response.course,
+            topics: response.topics || [],
+          };
+        }),
+      );
+
+      setCourseNotes(details);
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load notes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let isMounted = true;
-
-    const loadNotes = async () => {
-      try {
-        setIsLoading(true);
-        setError('');
-        const courses = await fetchAdminCourses();
-        const details = await Promise.all(
-          courses.map(async (course) => {
-            const response = await fetchAdminCourseBySlug(course.slug);
-            return {
-              course: response.course,
-              topics: response.topics || [],
-            };
-          }),
-        );
-
-        if (isMounted) {
-          setCourseNotes(details);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(loadError.message || 'Unable to load notes.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     loadNotes();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  const handleDeleteNotes = async (topic) => {
+    const confirmed = window.confirm(`Delete "${getNoteFileName(topic)}" from this topic?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setError('');
+      await deleteTopicNotes(topic._id);
+      await loadNotes();
+      showToast('Notes deleted successfully.');
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to delete notes.');
+      showToast(loadError.message || 'Unable to delete notes.', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <DashboardLayout
@@ -111,7 +123,8 @@ const AdminNotesPage = () => {
 
                 <div className="mt-4 space-y-3">
                   {topics.map((topic) => {
-                    const notePdfUrl = getAssetUrl(topic.notePdfUrl);
+                    const notePdfUrl = getNotePdfUrl(topic);
+                    const noteFileName = getNoteFileName(topic);
 
                     return (
                       <div
@@ -121,7 +134,7 @@ const AdminNotesPage = () => {
                         <div>
                           <p className="text-sm text-cyan-200">Day {topic.dayNumber}</p>
                           <p className="mt-1 font-semibold text-white">{topic.title}</p>
-                          <p className="mt-2 text-sm text-slate-300">{topic.noteFileName || 'No PDF uploaded'}</p>
+                          <p className="mt-2 text-sm text-slate-300">{notePdfUrl ? noteFileName : 'No valid PDF uploaded'}</p>
                         </div>
                         {notePdfUrl ? (
                           <div className="flex flex-wrap gap-2">
@@ -135,11 +148,19 @@ const AdminNotesPage = () => {
                             </a>
                             <a
                               href={notePdfUrl}
-                              download={topic.noteFileName || true}
+                              download={noteFileName || true}
                               className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
                             >
                               Download
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNotes(topic)}
+                              disabled={isDeleting}
+                              className="rounded-lg border border-rose-400/50 px-3 py-2 text-sm font-semibold text-rose-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+                            >
+                              Delete
+                            </button>
                           </div>
                         ) : (
                           <span className="rounded-full bg-amber-500/10 px-3 py-1 text-sm text-amber-200">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getAssetUrl } from '../services/api.js';
+import { getNoteFileName, getNotePdfUrl } from '../services/api.js';
 import { DEFAULT_COURSE_SLUG, fetchCourseProgress, fetchCourseRoadmapBySlug, saveTopicProgress, unmarkTopicProgress } from '../services/courseService.js';
 
 const studentNav = [
@@ -148,7 +148,8 @@ const RoadmapPage = () => {
     : 0;
 
   const selectedTopic = topicsWithStatus.find((topic) => topic._id === selectedTopicId) || topicsWithStatus[0] || null;
-  const selectedTopicNoteUrl = getAssetUrl(selectedTopic?.notePdfUrl);
+  const selectedTopicNoteUrl = getNotePdfUrl(selectedTopic);
+  const selectedTopicNoteFileName = getNoteFileName(selectedTopic);
   const practiceLinkGroups = selectedTopic ? groupPracticeLinksByPlatform(selectedTopic.practiceLinks) : {};
   const practicePlatforms = Object.keys(practiceLinkGroups).sort((left, right) => left.localeCompare(right));
 
@@ -337,7 +338,7 @@ const RoadmapPage = () => {
                       <div>
                         <p className="text-sm text-slate-300">Notes</p>
                         <p className="mt-2 text-sm text-slate-200">
-                          {selectedTopic.noteFileName || 'No PDF notes uploaded yet'}
+                          {selectedTopicNoteUrl ? selectedTopicNoteFileName : 'No PDF notes uploaded yet'}
                         </p>
                       </div>
                       {selectedTopicNoteUrl ? (
@@ -352,7 +353,7 @@ const RoadmapPage = () => {
                           </a>
                           <a
                             href={selectedTopicNoteUrl}
-                            download={selectedTopic.noteFileName || true}
+                            download={selectedTopicNoteFileName || true}
                             className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100"
                           >
                             Download
@@ -361,7 +362,7 @@ const RoadmapPage = () => {
                       ) : null}
                     </div>
                     {!selectedTopicNoteUrl ? (
-                      <p className="mt-3 text-sm text-amber-200">Notes are not available for this topic yet.</p>
+                      <p className="mt-3 text-sm text-amber-200">Notes are not available yet, or the saved PDF URL is invalid.</p>
                     ) : null}
                   </div>
 

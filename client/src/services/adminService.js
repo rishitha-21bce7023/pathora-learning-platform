@@ -52,6 +52,15 @@ export const uploadTopicNotes = async (topicId, file) => {
   }
 };
 
+export const deleteTopicNotes = async (topicId) => {
+  try {
+    const response = await api.delete(`/courses/topics/${topicId}/notes`);
+    return response.data.topic;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 export const fetchAdminUsers = async () => {
   const response = await api.get('/admin/users');
   return response.data.users || [];

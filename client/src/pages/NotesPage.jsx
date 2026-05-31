@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getAssetUrl } from '../services/api.js';
+import { getNoteFileName, getNotePdfUrl } from '../services/api.js';
 import { fetchPublishedCourses, fetchCourseRoadmapBySlug } from '../services/courseService.js';
 
 const studentNav = [
@@ -45,16 +45,16 @@ const NotesPage = () => {
 
         const mergedNotes = roadmaps.flatMap(({ course, topics }) =>
           topics
-            .filter((topic) => topic.notePdfUrl)
             .map((topic) => ({
               courseTitle: course.title,
               courseSlug: course.slug,
               dayNumber: topic.dayNumber,
               title: topic.title,
               description: topic.description,
-              noteFileName: topic.noteFileName || 'Notes PDF',
-              notePdfUrl: getAssetUrl(topic.notePdfUrl),
-            })),
+              noteFileName: getNoteFileName(topic),
+              notePdfUrl: getNotePdfUrl(topic),
+            }))
+            .filter((topic) => topic.notePdfUrl),
         );
 
         setNotes(mergedNotes);
