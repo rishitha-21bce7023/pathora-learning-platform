@@ -61,8 +61,8 @@ Public registration always creates student accounts. Create the admin account pr
 
 ```bash
 cd server
-SEED_ADMIN_NAME="Pathora Admin" \
-SEED_ADMIN_EMAIL="admin@example.com" \
+SEED_ADMIN_NAME="" \
+SEED_ADMIN_EMAIL="" \
 SEED_ADMIN_PASSWORD="use_a_long_secure_password" \
 npm run seed:admin
 ```
